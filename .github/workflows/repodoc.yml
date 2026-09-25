@@ -39,7 +39,7 @@ jobs:
         run: python repodoc.py . --output repodoc-summary.json
 
       - name: Commit updated README
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "docs: auto-update README [skip ci]"
           file_pattern: "README.md repodoc-summary.json"
