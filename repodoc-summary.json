@@ -1,0 +1,49 @@
+{
+  "description": "Local-first Electron tool that scans projects, prepares GitHub-ready repository files, and pushes safely.",
+  "existingRepoFiles": [
+    ".gitignore",
+    "README.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    ".editorconfig",
+    ".github/workflows/ci.yml",
+    ".github/workflows/repodoc.yml",
+    ".github/dependabot.yml",
+    ".github/ISSUE_TEMPLATE/bug_report.md",
+    ".github/ISSUE_TEMPLATE/feature_request.md",
+    ".gitleaks.toml",
+    ".env.example"
+  ],
+  "fileCount": 59,
+  "frameworks": [
+    "Electron"
+  ],
+  "ignoredDirectoriesPresent": [
+    ".git"
+  ],
+  "languages": [
+    "JavaScript",
+    "Python",
+    "HTML"
+  ],
+  "packageManagers": [
+    "npm"
+  ],
+  "projectName": "project-pusher",
+  "projectType": "Node",
+  "projectTypeId": "node",
+  "readinessScore": 100,
+  "recommendedFiles": [],
+  "repoReadiness": "high",
+  "scanTruncated": false,
+  "securityFindings": [],
+  "testCommands": [
+    "npm run check:js",
+    "npm test"
+  ],
+  "tests": [
+    "npm test"
+  ],
+  "warnings": []
+}
