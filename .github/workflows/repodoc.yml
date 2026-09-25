@@ -1,0 +1,48 @@
+name: RepoDoc
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "main/**"
+      - "renderer/**"
+      - "repodoc.py"
+      - ".github/workflows/repodoc.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repodoc-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-readme:
+    name: Update README
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Opsætter Python i stedet for Node.js for at køre dit script
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Kalder dit Python-script og genererer JSON-rapporten direkte i din README-mappe
+      - name: Generate documentation summary
+        run: python repodoc.py . --output repodoc-summary.json
+
+      - name: Commit updated README
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-update README [skip ci]"
+          file_pattern: "README.md repodoc-summary.json"
+          commit_user_name: "Project Pusher Bot"
+          commit_user_email: "bot@://github.com"
+          commit_author: "Project Pusher Bot <bot@://github.com>"
