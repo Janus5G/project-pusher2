@@ -1,0 +1,18 @@
+{
+  "name": "project-pusher",
+  "version": "1.0.0",
+  "main": "main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "check:js": "node --check main/main.js && node --check main/ipc-handlers.js && node --check main/scanner.js && node --check main/repo-generator.js && node --check main/security-checks.js && node --check main/git-push.js && node --check main/auth.js && node --check main/test-runner.js && node --check preload.js && node --check renderer/renderer.js"
+  },
+  "dependencies": {
+    "electron": "^43.2.0",
+    "simple-git": "^3.20.0"
+  },
+  "description": "Local-first Electron tool that scans projects, prepares GitHub-ready repository files, and pushes safely.",
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

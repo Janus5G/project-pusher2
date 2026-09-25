@@ -1,0 +1,67 @@
+# Project Pusher - gitleaks configuration
+# Docs: https://github.com/gitleaks/gitleaks
+
+title = "Project Pusher secret scanning rules"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "github-pat-classic"
+description = "GitHub classic personal access token"
+regex = '''ghp_[0-9A-Za-z]{36}'''
+tags = ["key", "github", "token"]
+
+[[rules]]
+id = "github-pat-fine-grained"
+description = "GitHub fine-grained personal access token"
+regex = '''github_pat_[0-9A-Za-z_]{82}'''
+tags = ["key", "github", "token"]
+
+[[rules]]
+id = "github-oauth-token"
+description = "GitHub OAuth access token"
+regex = '''gho_[0-9A-Za-z]{36}'''
+tags = ["key", "github", "token"]
+
+[[rules]]
+id = "github-app-token"
+description = "GitHub App user/server token"
+regex = '''(ghu|ghs)_[0-9A-Za-z]{36}'''
+tags = ["key", "github", "token"]
+
+[[rules]]
+id = "github-refresh-token"
+description = "GitHub refresh token"
+regex = '''ghr_[0-9A-Za-z]{76}'''
+tags = ["key", "github", "token"]
+
+[[rules]]
+id = "private-key-block"
+description = "Private key block"
+regex = '''-----BEGIN (RSA|EC|OPENSSH|DSA|PGP) PRIVATE KEY-----'''
+tags = ["key", "private"]
+
+[[rules]]
+id = "generic-secret-assignment"
+description = "Generic secret / password / token assignment"
+regex = '''(?i)(api[_-]?key|apikey|secret|passwd|password|token)\s*[:=]\s*['"]?[0-9A-Za-z\-_]{16,}['"]?'''
+tags = ["key", "generic"]
+
+[allowlist]
+description = "Documentation, examples and test fixtures are not secrets"
+paths = [
+  '''examples/''',
+  '''test/''',
+  '''tests/''',
+  '''__tests__/''',
+  '''.*\.md$''',
+  '''.*\.example$''',
+  '''\.env\.example$''',
+]
+regexes = [
+  '''ghp_replace_with_your_own_token''',
+  '''ghp_replace_me''',
+  '''your[_-]?token[_-]?here''',
+  '''<your-token>''',
+]

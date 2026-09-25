@@ -1,0 +1,46 @@
+name: RepoDoc
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "main/**"
+      - "renderer/**"
+      - "scripts/generate-docs.js"
+      - ".github/workflows/repodoc.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repodoc-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-readme:
+    name: Update README
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate documentation section
+        run: node scripts/generate-docs.js
+
+      - name: Commit updated README
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-update README [skip ci]"
+          file_pattern: "README.md"
+          commit_user_name: "Project Pusher Bot"
+          commit_user_email: "bot@users.noreply.github.com"
+          commit_author: "Project Pusher Bot <bot@users.noreply.github.com>"

@@ -1,0 +1,7 @@
+{
+  "testCommands": [
+    "npm test",
+    "npm run check:js"
+  ],
+  "projectType": "node"
+}

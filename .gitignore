@@ -1,0 +1,71 @@
+# --- Node.js ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+.pnp.*
+coverage/
+.nyc_output/
+
+# --- Build output ---
+dist/
+build/
+out/
+release/
+*.tsbuildinfo
+
+# --- Electron ---
+.electron/
+.electron-builder-cache/
+app-builder-bin/
+
+# --- Environment & secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+.ssh/
+id_rsa*
+id_ed25519*
+*.token
+secrets.json
+
+# --- Cache ---
+.cache/
+.parcel-cache/
+.eslintcache
+.npm-cache/
+.tmp/
+
+# --- Logs ---
+logs/
+*.log
+
+# --- OS ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# --- IDE / editor ---
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Misc ---
+*.local

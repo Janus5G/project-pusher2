@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Pusher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-tertiary: #f1f3f5;
+      --text-primary: #1a1a2e;
+      --text-secondary: #495057;
+      --text-muted: #868e96;
+      --border: #dee2e6;
+      --border-light: #e9ecef;
+      --accent: #4263eb;
+      --accent-hover: #3b5bdb;
+      --accent-light: #edf2ff;
+      --success: #2b8a3e;
+      --success-light: #ebfbee;
+      --danger: #e03131;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --transition: 0.2s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---- SIDEBAR ---- */
+    .sidebar {
+      width: 320px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 24px;
+      gap: 24px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-header .logo {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .sidebar h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.3px;
+      margin: 0;
+    }
+
+    .folder-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      border: 1px solid transparent;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-color: var(--border);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--border);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #ffffff;
+      border-color: var(--success);
+    }
+
+    .btn-success:hover {
+      background: #2b8a3e;
+    }
+
+    .folder-path {
+      font-size: 13px;
+      color: var(--text-muted);
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    /* ---- TRÆ ---- */
+    .tree-container {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background var(--transition);
+    }
+
+    .tree-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .tree-item.directory {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .tree-item.file {
+      color: var(--text-muted);
+    }
+
+    .tree-indent {
+      display: inline-block;
+      width: 16px;
+    }
+
+    /* ---- HOVEDOMRÅDE ---- */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 32px;
+      gap: 28px;
+      overflow-y: auto;
+      background: var(--bg-primary);
+    }
+
+    .card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 12px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    input[type="text"], select {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      flex: 1;
+      transition: border-color var(--transition);
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+      outline: none;
+      background: #fff;
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .output-box {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      color: var(--text-primary);
+      min-height: 80px;
+      max-height: 200px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .token-display {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 13px;
+      margin-left: 8px;
+    }
+
+    .error {
+      color: var(--danger);
+    }
+
+    .section-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+    }
+
+    input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+
+    .scan-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .scan-field {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+    }
+
+    .scan-field span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 5px;
+    }
+
+    .scan-field strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .readiness-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-left: auto;
+    }
+
+    .readiness-high { background: var(--success-light); color: var(--success); }
+    .readiness-medium { background: #fff4e6; color: #d9480f; }
+    .readiness-low { background: #fff5f5; color: var(--danger); }
+
+    .scan-list {
+      margin: 8px 0 0 18px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .scan-list.warning { color: #b42318; }
+    .scan-list.success { color: var(--success); }
+
+    .repo-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px 14px;
+      margin-bottom: 18px;
+    }
+
+    .repo-option {
+      align-items: flex-start;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+
+    .repo-option input { margin-top: 2px; }
+    .file-state { color: var(--text-muted); font-size: 11px; margin-left: auto; }
+    .repo-option:has(input:disabled) { opacity: .65; }
+
+    .inline-note {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">PP</div>
+      <h2>Project Pusher</h2>
+    </div>
+    <div class="folder-selector">
+      <button id="selectFolder" class="btn">📁 Vælg projektmappe</button>
+      <span id="folderPath" class="folder-path">Ingen mappe valgt</span>
+    </div>
+    <div class="tree-container" id="tree">
+      <span style="color: var(--text-muted);">Vælg en mappe for at se indhold</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Lokal repo-scanner -->
+    <div class="card" id="scanCard">
+      <h3>🧭 Repo scan summary <span id="scanScore" class="readiness-badge readiness-low">Ikke scannet</span></h3>
+      <p id="scanStatus" class="section-subtitle">Vælg en projektmappe. Scanningen kører lokalt og sender ikke projektdata til eksterne tjenester.</p>
+      <div class="scan-grid">
+        <div class="scan-field"><span>Project type</span><strong id="scanProjectType">—</strong></div>
+        <div class="scan-field"><span>Languages</span><strong id="scanLanguages">—</strong></div>
+        <div class="scan-field"><span>Frameworks</span><strong id="scanFrameworks">—</strong></div>
+        <div class="scan-field"><span>Package managers</span><strong id="scanManagers">—</strong></div>
+        <div class="scan-field"><span>Tests</span><strong id="scanTests">—</strong></div>
+        <div class="scan-field"><span>Likely purpose</span><strong id="scanPurpose">—</strong></div>
+      </div>
+      <strong style="font-size:13px;">Warnings</strong>
+      <ul id="scanWarnings" class="scan-list"><li>Ingen scan endnu.</li></ul>
+      <strong style="display:block;font-size:13px;margin-top:14px;">Recommended missing files</strong>
+      <ul id="scanRecommended" class="scan-list"><li>Ingen scan endnu.</li></ul>
+    </div>
+
+    <!-- Verifikation -->
+    <div class="card">
+      <h3>🔍 Verifikation</h3>
+      <p class="section-subtitle">Kør dine tests og se outputtet direkte.</p>
+      <button id="runTests" class="btn btn-primary">▶ Kør tests</button>
+      <div id="testOutput" class="output-box" style="margin-top: 12px;">Klik for at køre tests...</div>
+    </div>
+
+    <!-- Filgenerering -->
+    <div class="card">
+      <h3>📝 Generér projektfiler</h3>
+      <p class="section-subtitle">Vælg hvilke standardfiler du vil oprette i projektet.</p>
+      <div class="repo-options">
+        <label class="repo-option"><input type="checkbox" id="gitignore" data-repo-file=".gitignore"> .gitignore <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="readme" data-repo-file="README.md"> README.md <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="security" data-repo-file="SECURITY.md"> SECURITY.md <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="contributing" data-repo-file="CONTRIBUTING.md"> CONTRIBUTING.md <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="codeOfConduct" data-repo-file="CODE_OF_CONDUCT.md"> CODE_OF_CONDUCT.md <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="editorconfig" data-repo-file=".editorconfig"> .editorconfig <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="ci" data-repo-file=".github/workflows/ci.yml"> GitHub CI <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="repodoc" data-repo-file=".github/workflows/repodoc.yml"> RepoDoc workflow <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="dependabot" data-repo-file=".github/dependabot.yml"> Dependabot <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="bugTemplate" data-repo-file=".github/ISSUE_TEMPLATE/bug_report.md"> Bug template <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="featureTemplate" data-repo-file=".github/ISSUE_TEMPLATE/feature_request.md"> Feature template <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="gitleaks" data-repo-file=".gitleaks.toml"> Gitleaks config <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="envExample" data-repo-file=".env.example"> .env.example <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="changelog"> CHANGELOG.md <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="license"> LICENSE
+          <select id="licenseType" aria-label="License type">
+            <option>MIT</option>
+            <option>Apache-2.0</option>
+            <option>GPL-3.0</option>
+          </select>
+          <span class="file-state"></span>
+        </label>
+      </div>
+      <p class="inline-note">Existing files are automatically disabled and are never overwritten. Generated README and security guidance explicitly warn against committing tokens or secrets.</p>
+      <div class="form-row">
+        <input type="text" id="projectName" placeholder="Projektnavn" value="My Project">
+        <input type="text" id="description" placeholder="Kort beskrivelse">
+      </div>
+      <div class="form-row">
+        <input type="text" id="author" placeholder="Forfatter">
+        <input type="text" id="year" placeholder="År" value="2026">
+      </div>
+      <button id="generate" class="btn btn-primary">⚡ Generér filer</button>
+    </div>
+
+    <!-- Push -->
+    <div class="card">
+      <h3>🚀 Push til GitHub</h3>
+      <p class="section-subtitle">Log ind og send dine filer direkte til et eksisterende repository.</p>
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+        <button id="login" class="btn">🔑 Log ind med GitHub</button>
+        <span id="tokenStatus" class="token-display">Ikke logget ind</span>
+      </div>
+      <p class="inline-note" style="margin-bottom:14px;">GitHub-tokenet valideres og opbevares kun i main-processens hukommelse. Det skrives ikke til localStorage, projektfiler eller Git remote-URL'en.</p>
+      <div class="form-row">
+        <input type="text" id="remoteUrl" placeholder="https://github.com/bruger/repo.git" style="flex:2">
+        <input type="text" id="branch" value="main" style="flex:1">
+      </div>
+      <button id="push" class="btn btn-success">Push nu</button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
