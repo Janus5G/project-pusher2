@@ -104,5 +104,5 @@ Compare it against the published checksum before running the installer.
 
 ## Contact
 
-- Security: security@project-pusher.dev
+- Security: janusdkbiz_14151916113@gmail.com (remove nospam in numbers)
 - Maintainer: [@Janus5G](https://github.com/Janus5G)
