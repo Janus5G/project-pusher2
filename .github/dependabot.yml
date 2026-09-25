@@ -10,12 +10,9 @@ updates:
     open-pull-requests-limit: 5
     assignees:
       - Janus5G
-    labels:
-      - dependencies
     commit-message:
       prefix: "chore(deps)"
       include: scope
-
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -26,8 +23,5 @@ updates:
     open-pull-requests-limit: 5
     assignees:
       - Janus5G
-    labels:
-      - dependencies
-      - github-actions
     commit-message:
       prefix: "chore(ci)"
