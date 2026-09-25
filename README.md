@@ -35,7 +35,7 @@ cp .env.example .env   # then add your GitHub token
 npm start
 ```
 
-Requirements: **Node.js 20 or 22**, **npm 10+**, **Git 2.30+**.
+Requirements: **Node.js 22**, **npm 10+**, **Git 2.30+**.
 
 ## Usage
 
