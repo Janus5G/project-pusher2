@@ -9,7 +9,7 @@
 > Desktop app that stages, commits and pushes local project folders to GitHub — without you touching the command line.
 
 <p align="center">
-  <img src="./docs/images/project-pusher2-v1.1.0.webp" alt="Project Pusher2 v1.1.0 showing repo scan summary and release automation detection" width="900">
+  <img src="./docs/images/project-pusher2-v1.1.0.webp" alt="Project Pusher2 v1.1.0 showing repo scan summary and release automation detection" width="1100">
 </p>
 
 ## What's new in v1.1.0
