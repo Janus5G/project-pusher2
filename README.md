@@ -8,6 +8,26 @@
 
 > Desktop app that stages, commits and pushes local project folders to GitHub — without you touching the command line.
 
+<p align="center">
+  <img src="./docs/images/project-pusher2-v1.1.0.webp" alt="Project Pusher2 v1.1.0 showing repo scan summary and release automation detection" width="900">
+</p>
+
+## What's new in v1.1.0
+
+Project Pusher2 v1.1.0 adds automated GitHub Release generation for supported Electron projects using electron-builder.
+
+- Detects whether a project has a safe, supported release profile
+- Generates `.github/workflows/release.yml` automatically
+- Builds Windows x64, Linux x64 and macOS Universal releases
+- Verifies that the Git tag matches `package.json`
+- Fails safely when expected build artifacts are missing
+- Generates `SHA256SUMS.txt`
+- Publishes the GitHub Release only after all platform builds succeed
+- Never overwrites an existing release workflow
+- Refuses ambiguous or unsupported build configurations instead of guessing
+
+The complete v1.1.0 release pipeline was verified end-to-end on GitHub Actions. See [CHANGELOG.md](./CHANGELOG.md) for release history.
+
 ## What it does
 
 Project Pusher is an Electron desktop app for developers who move between machines and side projects. Pick a folder, pick a repository, write a commit message, hit **Push**.
@@ -107,7 +127,7 @@ Existing release workflows are never overwritten. If the scanner sees an ambiguo
 1. Confirm the scanner marks **Automated GitHub Release** as supported and generate the workflow once.
 2. Bump `version` in `package.json` (`npm version patch|minor|major`).
 3. Update `CHANGELOG.md`.
-4. Push the matching tag, for example `v1.0.1`.
+4. Push the matching tag, for example `vX.Y.Z`.
 5. GitHub Actions validates, builds all supported platforms, calculates SHA-256 checksums, and publishes the GitHub Release automatically.
 
 ## License
