@@ -2,7 +2,7 @@
 
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/docs/Web/JavaScript)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](./package.json)
 [![CI](https://github.com/Janus5G/project-pusher2/actions/workflows/ci.yml/badge.svg)](https://github.com/Janus5G/project-pusher2/actions/workflows/ci.yml)
 [![Security Scan](https://github.com/Janus5G/project-pusher2/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Janus5G/project-pusher2/actions/workflows/security-scan.yml)
 

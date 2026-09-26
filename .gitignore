@@ -69,3 +69,7 @@ desktop.ini
 
 # --- Misc ---
 *.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]

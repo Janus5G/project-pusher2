@@ -1,6 +1,6 @@
 {
   "name": "project-pusher",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Local-first Electron tool that scans projects, prepares GitHub-ready repository files, and pushes safely.",
   "main": "main/main.js",
   "license": "MIT",
