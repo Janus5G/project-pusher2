@@ -13,9 +13,10 @@
     ".github/ISSUE_TEMPLATE/bug_report.md",
     ".github/ISSUE_TEMPLATE/feature_request.md",
     ".gitleaks.toml",
-    ".env.example"
+    ".env.example",
+    ".github/workflows/release.yml"
   ],
-  "fileCount": 59,
+  "fileCount": 61,
   "frameworks": [
     "Electron"
   ],
@@ -35,6 +36,43 @@
   "projectTypeId": "node",
   "readinessScore": 100,
   "recommendedFiles": [],
+  "releaseAutomation": {
+    "artifactDirectory": "dist",
+    "artifacts": [
+      {
+        "patterns": [
+          "dist/*.exe"
+        ],
+        "platform": "Windows x64"
+      },
+      {
+        "patterns": [
+          "dist/*.AppImage"
+        ],
+        "platform": "Linux x64"
+      },
+      {
+        "patterns": [
+          "dist/*.dmg",
+          "dist/*.zip"
+        ],
+        "platform": "macOS Universal"
+      }
+    ],
+    "buildCommands": {
+      "linux": "npm run build:linux",
+      "macos": "npm run build:mac",
+      "windows": "npm run build:win"
+    },
+    "installCommand": "npm ci",
+    "manager": "npm",
+    "profile": "electron-builder",
+    "reason": "Automated release workflow already exists.",
+    "supported": true,
+    "version": "1.1.0",
+    "workflowExists": true,
+    "workflowPath": ".github/workflows/release.yml"
+  },
   "repoReadiness": "high",
   "scanTruncated": false,
   "securityFindings": [],
