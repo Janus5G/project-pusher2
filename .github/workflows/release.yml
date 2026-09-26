@@ -153,7 +153,9 @@ jobs:
                   for chunk in iter(lambda: f.read(1024 * 1024), b""):
                       digest.update(chunk)
 
-              lines.append(f"{digest.hexdigest()}  {path.name}")
+              lines.append(
+                  f"{digest.hexdigest()}  {path.name}"
+              )
 
           output.write_text(
               "\n".join(lines) + "\n",
