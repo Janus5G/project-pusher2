@@ -120,6 +120,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify Git repository
+        shell: bash
+        run: |
+          git rev-parse --is-inside-work-tree
+          git tag --list "${GITHUB_REF_NAME}"
+
       - name: Download all platform builds
         uses: actions/download-artifact@v8
         with:
