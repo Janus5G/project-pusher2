@@ -23,7 +23,7 @@ Project Pusher is an Electron desktop app for developers who move between machin
 
 ### Prebuilt binaries
 
-Download the latest installer from the [Releases](https://github.com/Janus5G/Project-Pusher/releases) page and verify the SHA-256 checksum listed in the release notes.
+Download the latest installer from the [Releases](https://github.com/Janus5G/project-pusher2/releases) page and verify the SHA-256 checksum listed in the release notes.
 
 ### From source
 
