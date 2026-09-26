@@ -102,6 +102,6 @@ Code style is enforced by `.editorconfig` + ESLint: UTF-8, LF, 2-space indent. S
 
 ## Support
 
-- 🐛 [Bug reports](https://github.com/Janus5G/Project-Pusher2/issues/new?template=bug_report.md)
-- 💡 [Feature requests](https://github.com/Janus5G/Project-Pusher2/issues/new?template=feature_request.md)
+- 🐛 [Bug reports](https://github.com/Janus5G/project-pusher2/issues/new?template=bug_report.md)
+- 💡 [Feature requests](https://github.com/Janus5G/project-pusher2/issues/new?template=feature_request.md)
 - 🔐 Security: security@project-pusher.dev
