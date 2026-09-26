@@ -11,10 +11,10 @@ test('renderer HTML contains every scan and generation control used by renderer.
   const html = fs.readFileSync(path.join(root, 'renderer', 'index.html'), 'utf8');
   const requiredIds = [
     'selectFolder', 'folderPath', 'tree', 'scanScore', 'scanStatus', 'scanProjectType',
-    'scanLanguages', 'scanFrameworks', 'scanManagers', 'scanTests', 'scanPurpose',
+    'scanLanguages', 'scanFrameworks', 'scanManagers', 'scanTests', 'scanPurpose', 'scanRelease',
     'scanWarnings', 'scanRecommended', 'runTests', 'testOutput', 'generate',
     'gitignore', 'readme', 'security', 'contributing', 'codeOfConduct', 'editorconfig',
-    'ci', 'repodoc', 'dependabot', 'bugTemplate', 'featureTemplate', 'gitleaks',
+    'ci', 'release', 'repodoc', 'dependabot', 'bugTemplate', 'featureTemplate', 'gitleaks',
     'envExample', 'changelog', 'license', 'licenseType', 'projectName', 'description',
     'author', 'year', 'login', 'tokenStatus', 'remoteUrl', 'branch', 'push'
   ];

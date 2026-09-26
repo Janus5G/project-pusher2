@@ -39,6 +39,8 @@ const STANDARD_REPO_FILES = [
   '.env.example'
 ];
 
+const RELEASE_WORKFLOW_PATH = '.github/workflows/release.yml';
+
 function posixPath(value) {
   return value.split(path.sep).join('/');
 }
@@ -273,6 +275,146 @@ function scoreReadiness({ securityFindings, existingRepoFiles, testCommands, typ
   return { score, label };
 }
 
+function packageScriptCommand(manager, scriptName) {
+  if (manager === 'yarn') return `yarn ${scriptName}`;
+  if (manager === 'pnpm') return `pnpm run ${scriptName}`;
+  return `npm run ${scriptName}`;
+}
+
+function electronBuilderCommand(manager, args) {
+  if (manager === 'yarn') return `yarn electron-builder ${args}`;
+  if (manager === 'pnpm') return `pnpm exec electron-builder ${args}`;
+  return `npm exec -- electron-builder ${args}`;
+}
+
+function detectReleaseAutomation(metadata, frameworks, packageManagers, fileSet) {
+  const workflowExists = fileSet.has(RELEASE_WORKFLOW_PATH);
+  const frameworkSet = new Set(frameworks);
+  const manager = packageManagers.find((name) => ['npm', 'yarn', 'pnpm'].includes(name)) || 'npm';
+  const packageJson = metadata.packageJson || {};
+  const scripts = packageJson.scripts && typeof packageJson.scripts === 'object' ? packageJson.scripts : {};
+  const version = typeof packageJson.version === 'string' ? packageJson.version.trim() : '';
+  const isElectron = metadata.type === 'node' && (frameworkSet.has('Electron') || metadata.packageDeps.has('electron'));
+  const hasElectronBuilder = metadata.packageDeps.has('electron-builder');
+  const externalBuilderConfig = [
+    'electron-builder.yml', 'electron-builder.yaml', 'electron-builder.json',
+    'electron-builder.js', 'electron-builder.cjs', 'electron-builder.mjs'
+  ].find((name) => fileSet.has(name));
+
+  const buildConfig = packageJson.build && typeof packageJson.build === 'object' ? packageJson.build : {};
+  const outputDirectory = typeof buildConfig?.directories?.output === 'string' && buildConfig.directories.output.trim()
+    ? buildConfig.directories.output.trim().replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/$/, '')
+    : 'dist';
+
+  const safeOutputDirectory = outputDirectory &&
+    !path.isAbsolute(outputDirectory) &&
+    outputDirectory !== '..' &&
+    !outputDirectory.startsWith('../');
+
+  const installCommand = manager === 'pnpm'
+    ? (fileSet.has('pnpm-lock.yaml') ? 'pnpm install --frozen-lockfile' : 'pnpm install')
+    : manager === 'yarn'
+      ? (fileSet.has('yarn.lock') ? 'yarn install --immutable' : 'yarn install')
+      : (fileSet.has('package-lock.json') ? 'npm ci' : 'npm install');
+
+  const base = {
+    workflowPath: RELEASE_WORKFLOW_PATH,
+    workflowExists,
+    supported: false,
+    profile: null,
+    manager,
+    installCommand,
+    artifactDirectory: safeOutputDirectory ? outputDirectory : null,
+    version: version || null,
+    buildCommands: null,
+    artifacts: [],
+    reason: ''
+  };
+
+  if (!isElectron) {
+    return {
+      ...base,
+      reason: 'Automatic release generation is only enabled when Project Pusher can prove a safe packaging profile. Electron + electron-builder is supported automatically in this version.'
+    };
+  }
+
+  if (!hasElectronBuilder) {
+    return {
+      ...base,
+      profile: 'electron',
+      reason: 'Electron detected, but electron-builder is not installed. Add electron-builder before generating an automated release workflow.'
+    };
+  }
+
+  if (!version) {
+    return {
+      ...base,
+      profile: 'electron-builder',
+      reason: 'Electron + electron-builder detected, but package.json has no version. Add a package version before enabling automated releases.'
+    };
+  }
+
+  if (!safeOutputDirectory) {
+    return {
+      ...base,
+      profile: 'electron-builder',
+      reason: 'electron-builder output directory is unsafe or outside the project. Use a relative output directory before enabling automated releases.'
+    };
+  }
+
+  if (externalBuilderConfig) {
+    return {
+      ...base,
+      profile: 'electron-builder',
+      reason: `External electron-builder config detected (${externalBuilderConfig}). Automatic release generation is disabled until that config is explicitly supported.`
+    };
+  }
+
+  const expectedScripts = {
+    'build:win': [/electron-builder/i, /--win\b/i, /\bnsis\b/i, /--x64\b/i],
+    'build:linux': [/electron-builder/i, /--linux\b/i, /\bAppImage\b/i, /--x64\b/i],
+    'build:mac': [/electron-builder/i, /--mac\b/i, /\bdmg\b/i, /\bzip\b/i, /--universal\b/i]
+  };
+
+  for (const [scriptName, requirements] of Object.entries(expectedScripts)) {
+    const script = scripts[scriptName];
+    if (typeof script === 'string' && script.trim() && !requirements.every((pattern) => pattern.test(script))) {
+      return {
+        ...base,
+        profile: 'electron-builder',
+        reason: `${scriptName} exists but does not prove the required cross-platform target. Project Pusher will not replace or guess an existing build script.`
+      };
+    }
+  }
+
+  const commandFor = (scriptName, fallbackArgs) => (
+    typeof scripts[scriptName] === 'string' && scripts[scriptName].trim()
+      ? packageScriptCommand(manager, scriptName)
+      : electronBuilderCommand(manager, fallbackArgs)
+  );
+
+  const prefix = outputDirectory === '.' ? '' : `${outputDirectory}/`;
+
+  return {
+    ...base,
+    supported: true,
+    profile: 'electron-builder',
+    buildCommands: {
+      windows: commandFor('build:win', '--win nsis --x64 --publish never'),
+      linux: commandFor('build:linux', '--linux AppImage --x64 --publish never'),
+      macos: commandFor('build:mac', '--mac dmg zip --universal --publish never')
+    },
+    artifacts: [
+      { platform: 'Windows x64', patterns: [`${prefix}*.exe`] },
+      { platform: 'Linux x64', patterns: [`${prefix}*.AppImage`] },
+      { platform: 'macOS Universal', patterns: [`${prefix}*.dmg`, `${prefix}*.zip`] }
+    ],
+    reason: workflowExists
+      ? 'Automated Electron release workflow already exists.'
+      : 'Ready to generate a tag-driven Windows, Linux and macOS release workflow with SHA-256 checksums.'
+  };
+}
+
 async function scanProject(folderPath, options = {}) {
   const root = await fs.promises.realpath(path.resolve(folderPath));
   const stat = await fs.promises.stat(root);
@@ -330,6 +472,8 @@ async function scanProject(folderPath, options = {}) {
   if (metadata.gradle) packageManagers.push('gradle');
   if (metadata.csproj || files.some((entry) => entry.path.endsWith('.sln'))) packageManagers.push('dotnet');
 
+  const releaseAutomation = detectReleaseAutomation(metadata, [...frameworks], uniqueSorted(packageManagers), fileSet);
+
   const tests = new Set();
   const testCommands = [];
   const projectPusherConfig = fileSet.has('.project-pusher.json')
@@ -385,7 +529,9 @@ async function scanProject(folderPath, options = {}) {
 
   const securityFindings = scanSecurityRisks(root, files);
   const existingRepoFiles = STANDARD_REPO_FILES.filter((repoFile) => fileSet.has(repoFile));
+  if (fileSet.has(RELEASE_WORKFLOW_PATH)) existingRepoFiles.push(RELEASE_WORKFLOW_PATH);
   const recommendedFiles = STANDARD_REPO_FILES.filter((repoFile) => !fileSet.has(repoFile));
+  if (releaseAutomation.supported && !fileSet.has(RELEASE_WORKFLOW_PATH)) recommendedFiles.push(RELEASE_WORKFLOW_PATH);
   const description = inferPurpose(metadata, [...frameworks], files);
   const readiness = scoreReadiness({
     securityFindings,
@@ -414,6 +560,7 @@ async function scanProject(folderPath, options = {}) {
     readinessScore: readiness.score,
     warnings,
     securityFindings,
+    releaseAutomation,
     recommendedFiles,
     existingRepoFiles,
     ignoredDirectoriesPresent: walk.ignoredDirectoriesPresent,
@@ -425,6 +572,7 @@ async function scanProject(folderPath, options = {}) {
 module.exports = {
   IGNORE_DIRS,
   STANDARD_REPO_FILES,
+  RELEASE_WORKFLOW_PATH,
   scanProject,
   walkProject
 };

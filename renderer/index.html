@@ -404,6 +404,7 @@
         <div class="scan-field"><span>Package managers</span><strong id="scanManagers">—</strong></div>
         <div class="scan-field"><span>Tests</span><strong id="scanTests">—</strong></div>
         <div class="scan-field"><span>Likely purpose</span><strong id="scanPurpose">—</strong></div>
+        <div class="scan-field"><span>Release automation</span><strong id="scanRelease">—</strong></div>
       </div>
       <strong style="font-size:13px;">Warnings</strong>
       <ul id="scanWarnings" class="scan-list"><li>Ingen scan endnu.</li></ul>
@@ -431,6 +432,7 @@
         <label class="repo-option"><input type="checkbox" id="codeOfConduct" data-repo-file="CODE_OF_CONDUCT.md"> CODE_OF_CONDUCT.md <span class="file-state"></span></label>
         <label class="repo-option"><input type="checkbox" id="editorconfig" data-repo-file=".editorconfig"> .editorconfig <span class="file-state"></span></label>
         <label class="repo-option"><input type="checkbox" id="ci" data-repo-file=".github/workflows/ci.yml"> GitHub CI <span class="file-state"></span></label>
+        <label class="repo-option"><input type="checkbox" id="release" data-repo-file=".github/workflows/release.yml"> Automated GitHub Release <span class="file-state"></span></label>
         <label class="repo-option"><input type="checkbox" id="repodoc" data-repo-file=".github/workflows/repodoc.yml"> RepoDoc workflow <span class="file-state"></span></label>
         <label class="repo-option"><input type="checkbox" id="dependabot" data-repo-file=".github/dependabot.yml"> Dependabot <span class="file-state"></span></label>
         <label class="repo-option"><input type="checkbox" id="bugTemplate" data-repo-file=".github/ISSUE_TEMPLATE/bug_report.md"> Bug template <span class="file-state"></span></label>
@@ -447,7 +449,7 @@
           <span class="file-state"></span>
         </label>
       </div>
-      <p class="inline-note">Existing files are automatically disabled and are never overwritten. Generated README and security guidance explicitly warn against committing tokens or secrets.</p>
+      <p class="inline-note">Existing files are automatically disabled and are never overwritten. Automated GitHub Release is enabled only when the scanner can prove a supported packaging profile; the first supported profile is Electron + electron-builder.</p>
       <div class="form-row">
         <input type="text" id="projectName" placeholder="Projektnavn" value="My Project">
         <input type="text" id="description" placeholder="Kort beskrivelse">

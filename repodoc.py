@@ -43,6 +43,7 @@ STANDARD_REPO_FILES = [
     ".github/dependabot.yml", ".github/ISSUE_TEMPLATE/bug_report.md",
     ".github/ISSUE_TEMPLATE/feature_request.md", ".gitleaks.toml", ".env.example",
 ]
+RELEASE_WORKFLOW_PATH = ".github/workflows/release.yml"
 
 SAFE_ENV_FILES = {".env.example", ".env.sample", ".env.template"}
 TEXT_EXTENSIONS = {
@@ -382,6 +383,116 @@ def readiness_score(security: list[dict], existing: list[str], tests: list[str],
     return score, "high" if score >= 80 else ("medium" if score >= 50 else "low")
 
 
+def detect_release_automation(meta: dict, frameworks: list[str], managers: list[str], file_set: set[str]) -> dict:
+    workflow_exists = RELEASE_WORKFLOW_PATH in file_set
+    manager = next((item for item in managers if item in {"npm", "yarn", "pnpm"}), "npm")
+    package = meta.get("package") or {}
+    scripts = package.get("scripts") if isinstance(package.get("scripts"), dict) else {}
+    version = str(package.get("version") or "").strip()
+    is_electron = meta["kind"] == "node" and ("Electron" in frameworks or "electron" in meta["deps"])
+    has_builder = "electron-builder" in meta["deps"]
+    external_builder_config = next((
+        name for name in (
+            "electron-builder.yml", "electron-builder.yaml", "electron-builder.json",
+            "electron-builder.js", "electron-builder.cjs", "electron-builder.mjs",
+        ) if name in file_set
+    ), None)
+
+    build_config = package.get("build") if isinstance(package.get("build"), dict) else {}
+    directories = build_config.get("directories") if isinstance(build_config.get("directories"), dict) else {}
+    output_directory = str(directories.get("output") or "dist").strip().replace("\\", "/")
+    if output_directory.startswith("./"):
+        output_directory = output_directory[2:]
+    output_directory = output_directory.rstrip("/") or "."
+
+    output_path = Path(output_directory)
+    safe_output = not output_path.is_absolute() and ".." not in output_path.parts
+
+    if manager == "pnpm":
+        install = "pnpm install --frozen-lockfile" if "pnpm-lock.yaml" in file_set else "pnpm install"
+    elif manager == "yarn":
+        install = "yarn install --immutable" if "yarn.lock" in file_set else "yarn install"
+    else:
+        install = "npm ci" if "package-lock.json" in file_set else "npm install"
+
+    base = {
+        "workflowPath": RELEASE_WORKFLOW_PATH,
+        "workflowExists": workflow_exists,
+        "supported": False,
+        "profile": None,
+        "manager": manager,
+        "installCommand": install,
+        "artifactDirectory": output_directory if safe_output else None,
+        "version": version or None,
+        "buildCommands": None,
+        "reason": "",
+    }
+
+    if not is_electron:
+        base["reason"] = "Automatic release generation is enabled only for a proven packaging profile. Electron + electron-builder is supported automatically in this version."
+        return base
+    if not has_builder:
+        base["profile"] = "electron"
+        base["reason"] = "Electron detected, but electron-builder is not installed."
+        return base
+    if not version:
+        base["profile"] = "electron-builder"
+        base["reason"] = "Electron + electron-builder detected, but package.json has no version."
+        return base
+    if not safe_output:
+        base["profile"] = "electron-builder"
+        base["reason"] = "electron-builder output directory is unsafe or outside the project."
+        return base
+    if external_builder_config:
+        base["profile"] = "electron-builder"
+        base["reason"] = f"External electron-builder config detected ({external_builder_config}). Automatic release generation is disabled until that config is explicitly supported."
+        return base
+
+    expected = {
+        "build:win": (r"electron-builder", r"--win\b", r"\bnsis\b", r"--x64\b"),
+        "build:linux": (r"electron-builder", r"--linux\b", r"\bAppImage\b", r"--x64\b"),
+        "build:mac": (r"electron-builder", r"--mac\b", r"\bdmg\b", r"\bzip\b", r"--universal\b"),
+    }
+    for script_name, patterns in expected.items():
+        script = scripts.get(script_name)
+        if isinstance(script, str) and script.strip():
+            if not all(re.search(pattern, script, re.I) for pattern in patterns):
+                base["profile"] = "electron-builder"
+                base["reason"] = f"{script_name} exists but does not prove the required cross-platform target. Project Pusher will not replace or guess an existing build script."
+                return base
+
+    def command(script_name: str, fallback: str) -> str:
+        if isinstance(scripts.get(script_name), str) and scripts[script_name].strip():
+            if manager == "yarn":
+                return f"yarn {script_name}"
+            if manager == "pnpm":
+                return f"pnpm run {script_name}"
+            return f"npm run {script_name}"
+        if manager == "yarn":
+            return f"yarn electron-builder {fallback}"
+        if manager == "pnpm":
+            return f"pnpm exec electron-builder {fallback}"
+        return f"npm exec -- electron-builder {fallback}"
+
+    prefix = "" if output_directory == "." else f"{output_directory}/"
+    base.update({
+        "supported": True,
+        "profile": "electron-builder",
+        "buildCommands": {
+            "windows": command("build:win", "--win nsis --x64 --publish never"),
+            "linux": command("build:linux", "--linux AppImage --x64 --publish never"),
+            "macos": command("build:mac", "--mac dmg zip --universal --publish never"),
+        },
+        "artifacts": [
+            {"platform": "Windows x64", "patterns": [f"{prefix}*.exe"]},
+            {"platform": "Linux x64", "patterns": [f"{prefix}*.AppImage"]},
+            {"platform": "macOS Universal", "patterns": [f"{prefix}*.dmg", f"{prefix}*.zip"]},
+        ],
+        "reason": "Automated release workflow already exists." if workflow_exists else "Ready to generate a tag-driven Windows, Linux and macOS release workflow with SHA-256 checksums.",
+    })
+    return base
+
+
 def scan_project(folder: str | Path) -> dict:
     root = Path(folder).expanduser().resolve(strict=True)
     if not root.is_dir():
@@ -398,6 +509,7 @@ def scan_project(folder: str | Path) -> dict:
     languages = [name for name, _ in sorted(language_bytes.items(), key=lambda pair: (-pair[1], pair[0]))]
     frameworks = detect_frameworks(meta)
     managers = detect_package_managers(meta, file_set)
+    release_automation = detect_release_automation(meta, frameworks, managers, file_set)
     tests, test_commands = detect_tests(meta, frameworks, managers, files, root)
     if ".project-pusher.json" in file_set:
         configured = read_json(root / ".project-pusher.json").get("testCommands", [])
@@ -406,7 +518,11 @@ def scan_project(folder: str | Path) -> dict:
             test_commands = sorted(set(test_commands))
     security = scan_security(root, files)
     existing = [name for name in STANDARD_REPO_FILES if name in file_set]
+    if RELEASE_WORKFLOW_PATH in file_set:
+        existing.append(RELEASE_WORKFLOW_PATH)
     recommended = [name for name in STANDARD_REPO_FILES if name not in file_set]
+    if release_automation["supported"] and RELEASE_WORKFLOW_PATH not in file_set:
+        recommended.append(RELEASE_WORKFLOW_PATH)
     purpose = infer_purpose(meta, frameworks, file_set)
     score, readiness = readiness_score(security, existing, test_commands, meta["kind"], meta["description"], file_set)
 
@@ -422,6 +538,7 @@ def scan_project(folder: str | Path) -> dict:
         "languages": languages, "frameworks": frameworks, "packageManagers": managers,
         "tests": tests, "testCommands": test_commands, "repoReadiness": readiness,
         "readinessScore": score, "warnings": warnings, "securityFindings": security,
+        "releaseAutomation": release_automation,
         "recommendedFiles": recommended, "existingRepoFiles": existing,
         "ignoredDirectoriesPresent": ignored, "fileCount": len(files), "scanTruncated": truncated,
     }
@@ -528,6 +645,184 @@ jobs:
     return header + '      - run: echo "No language-specific CI command was detected."\n'
 
 
+def release_text(summary: dict) -> str:
+    release = summary.get("releaseAutomation") or {}
+    if not release.get("supported") or release.get("profile") != "electron-builder":
+        raise ValueError(release.get("reason") or "Automatic release generation is not supported for this project.")
+
+    manager = release.get("manager") or "npm"
+    install = release.get("installCommand") or "npm ci"
+    artifact_directory = release.get("artifactDirectory") or "dist"
+    artifact_prefix = "" if artifact_directory == "." else f"{artifact_directory}/"
+    commands = release.get("buildCommands") or {}
+    tests = summary.get("testCommands") or ['echo "No automated test command detected; continuing with packaging validation."']
+    test_lines = "\n".join(f"          {command}" for command in tests)
+    corepack = "" if manager == "npm" else "      - name: Enable Corepack\n        run: corepack enable\n\n"
+    cache_line = "          cache: npm\n" if manager == "npm" else ""
+
+    workflow = f"""name: Build Cross-Platform Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate release source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+{cache_line}{corepack}      - name: Install dependencies
+        run: {install}
+      - name: Run detected tests
+        shell: bash
+        run: |
+{test_lines}
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=$(printf '%s' "$GITHUB_REF_NAME" | sed 's/^v//')
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Git tag does not match package.json version."
+            exit 1
+          fi
+
+  build:
+    name: Build __MATRIX_NAME__
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-latest
+            command: {json.dumps(commands["windows"])}
+            artifact: project-release-windows
+            files: |
+              {artifact_prefix}*.exe
+          - name: Linux x64
+            os: ubuntu-latest
+            command: {json.dumps(commands["linux"])}
+            artifact: project-release-linux
+            files: |
+              {artifact_prefix}*.AppImage
+          - name: macOS Universal
+            os: macos-latest
+            command: {json.dumps(commands["macos"])}
+            artifact: project-release-macos
+            files: |
+              {artifact_prefix}*.dmg
+              {artifact_prefix}*.zip
+    runs-on: __MATRIX_OS__
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+{cache_line}{corepack}      - name: Install dependencies
+        run: {install}
+      - name: Build
+        run: __MATRIX_COMMAND__
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: __MATRIX_ARTIFACT__
+          path: __MATRIX_FILES__
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository and tags
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Verify Git repository
+        shell: bash
+        run: |
+          git rev-parse --is-inside-work-tree
+          git tag --list "$GITHUB_REF_NAME"
+      - name: Download all platform builds
+        uses: actions/download-artifact@v8
+        with:
+          pattern: project-release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Generate SHA-256 checksums
+        shell: python
+        run: |
+          from pathlib import Path
+          import hashlib
+          root = Path("release-assets")
+          output = root / "SHA256SUMS.txt"
+          files = sorted(p for p in root.iterdir() if p.is_file() and p.name != "SHA256SUMS.txt")
+          if not files:
+              raise SystemExit("No release files found.")
+          lines = []
+          for artifact in files:
+              digest = hashlib.sha256()
+              with artifact.open("rb") as handle:
+                  for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                      digest.update(chunk)
+              lines.append(f"{{digest.hexdigest()}}  {{artifact.name}}")
+          output.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+          print(output.read_text())
+      - name: Prepare checksum release notes
+        shell: bash
+        run: |
+          {{
+            echo "## SHA-256 checksums"
+            echo
+            printf '%b' '\\x60\\x60\\x60text\\n'
+            cat release-assets/SHA256SUMS.txt
+            printf '%b' '\\x60\\x60\\x60\\n'
+          }} > release-prefix.md
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          __GH_TOKEN_KEY__: __GITHUB_TOKEN__
+          GH_REPO: __GITHUB_REPOSITORY__
+        run: |
+          gh release create "$GITHUB_REF_NAME" \\
+            release-assets/* \\
+            --verify-tag \\
+            --generate-notes \\
+            --notes "$(cat release-prefix.md)"
+"""
+    expressions = {
+        "__MATRIX_NAME__": "$" + "{{ matrix.name }}",
+        "__MATRIX_OS__": "$" + "{{ matrix.os }}",
+        "__MATRIX_COMMAND__": "$" + "{{ matrix.command }}",
+        "__MATRIX_ARTIFACT__": "$" + "{{ matrix.artifact }}",
+        "__MATRIX_FILES__": "$" + "{{ matrix.files }}",
+        "__GH_TOKEN_KEY__": "GH_" + "TOKEN",
+        "__GITHUB_TOKEN__": "$" + "{{ github.token }}",
+        "__GITHUB_REPOSITORY__": "$" + "{{ github.repository }}",
+    }
+    for key, value in expressions.items():
+        workflow = workflow.replace(key, value)
+    return workflow
+
+
 def dependabot_text(summary: dict) -> str:
     ecosystems = {"github-actions"}
     managers = set(summary["packageManagers"])
@@ -545,7 +840,7 @@ def dependabot_text(summary: dict) -> str:
 def standard_contents(summary: dict) -> dict[str, str]:
     project = summary["projectName"]
     tests = "\n".join(f"- `{cmd}`" for cmd in summary["testCommands"]) or "- Run the project-appropriate tests before submitting changes."
-    return {
+    contents = {
         ".gitignore": gitignore_text(summary),
         "README.md": readme_text(summary),
         "SECURITY.md": f"""# Security Policy
@@ -701,6 +996,10 @@ paths = ['''^\\.env\\.example$''']
 # EXAMPLE_SERVICE_URL=
 """,
     }
+    release = summary.get("releaseAutomation") or {}
+    if release.get("supported"):
+        contents[RELEASE_WORKFLOW_PATH] = release_text(summary)
+    return contents
 
 
 def safe_destination(root: Path, relative: str) -> Path:
@@ -729,7 +1028,11 @@ def safe_destination(root: Path, relative: str) -> Path:
 def generate_missing(root: Path, summary: dict) -> dict:
     created, skipped = [], []
     contents = standard_contents(summary)
-    for relative in STANDARD_REPO_FILES:
+    targets = list(STANDARD_REPO_FILES)
+    release = summary.get("releaseAutomation") or {}
+    if release.get("supported") and RELEASE_WORKFLOW_PATH not in targets:
+        targets.append(RELEASE_WORKFLOW_PATH)
+    for relative in targets:
         destination = safe_destination(root, relative)
         try:
             with destination.open("x", encoding="utf-8", newline="\n") as handle:

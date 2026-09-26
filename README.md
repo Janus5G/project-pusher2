@@ -88,13 +88,27 @@ scripts/      build & docs automation
 
 Code style is enforced by `.editorconfig` + ESLint: UTF-8, LF, 2-space indent. See [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
 
+## Automated release generation
+
+Project Pusher can generate an opt-in `.github/workflows/release.yml` when the local scanner can prove a supported packaging profile.
+
+The first supported profile is **Electron + electron-builder**. For that profile Project Pusher generates a tag-driven workflow that:
+
+- validates tests and the package/tag version,
+- builds Windows x64 `.exe`, Linux x64 `.AppImage`, and macOS Universal `.dmg` + `.zip`,
+- fails when expected artifacts are missing,
+- creates `SHA256SUMS.txt`,
+- publishes one GitHub Release only after all platform builds succeed.
+
+Existing release workflows are never overwritten. If the scanner sees an ambiguous build script, an unsupported external electron-builder config, or another project type, the release option stays disabled instead of guessing.
+
 ## Release
 
-1. Bump `version` in `package.json` (`npm version patch|minor|major`).
-2. Update `CHANGELOG.md`.
-3. Push the tag — CI builds Windows/macOS/Linux artifacts.
-4. Create the GitHub release, attach artifacts and their SHA-256 checksums.
-5. Verify the tag matches `package.json` before announcing.
+1. Confirm the scanner marks **Automated GitHub Release** as supported and generate the workflow once.
+2. Bump `version` in `package.json` (`npm version patch|minor|major`).
+3. Update `CHANGELOG.md`.
+4. Push the matching tag, for example `v1.0.1`.
+5. GitHub Actions validates, builds all supported platforms, calculates SHA-256 checksums, and publishes the GitHub Release automatically.
 
 ## License
 

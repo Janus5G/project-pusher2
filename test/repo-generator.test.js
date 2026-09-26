@@ -59,3 +59,46 @@ test('license generation preserves MIT, Apache-2.0 and GPL-3.0 options', (t) => 
     assert.doesNotMatch(content, /^\.\.\.$/m);
   }
 });
+
+
+test('release generator creates the verified cross-platform Electron workflow', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'project-pusher-release-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  const scan = {
+    ...makeScan(),
+    frameworks: ['Electron'],
+    releaseAutomation: {
+      supported: true,
+      profile: 'electron-builder',
+      manager: 'npm',
+      installCommand: 'npm ci',
+      artifactDirectory: 'dist',
+      version: '1.0.0',
+      buildCommands: {
+        windows: 'npm run build:win',
+        linux: 'npm run build:linux',
+        macos: 'npm run build:mac'
+      }
+    }
+  };
+
+  const result = generateRepoFiles(root, scan, {
+    files: { release: true }
+  });
+
+  assert.deepEqual(result.created, ['.github/workflows/release.yml']);
+  const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'release.yml'), 'utf8');
+  assert.match(workflow, /name: Windows x64/);
+  assert.match(workflow, /name: Linux x64/);
+  assert.match(workflow, /name: macOS Universal/);
+  assert.match(workflow, /Checkout repository and tags/);
+  assert.match(workflow, /SHA256SUMS\.txt/);
+  assert.match(workflow, /gh release create/);
+  assert.match(workflow, /npm run build:win/);
+  assert.match(workflow, /npm run build:linux/);
+  assert.match(workflow, /npm run build:mac/);
+  assert.match(workflow, /dist\/\*\.exe/);
+  assert.match(workflow, /SHA256SUMS\.txt/);
+});
+
