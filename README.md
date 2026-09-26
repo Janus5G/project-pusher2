@@ -3,8 +3,8 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/docs/Web/JavaScript)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](./package.json)
-[![CI](https://github.com/Janus5G/Project-Pusher2/actions/workflows/ci.yml/badge.svg)](https://github.com/Janus5G/Project-Pusher2/actions/workflows/ci.yml)
-[![Security Scan](https://github.com/Janus5G/Project-Pusher2/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Janus5G/Project-Pusher2/actions/workflows/security-scan.yml)
+[![CI](https://github.com/Janus5G/project-pusher2/actions/workflows/ci.yml/badge.svg)](https://github.com/Janus5G/project-pusher2/actions/workflows/ci.yml)
+[![Security Scan](https://github.com/Janus5G/project-pusher2/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Janus5G/project-pusher2/actions/workflows/security-scan.yml)
 
 > Desktop app that stages, commits and pushes local project folders to GitHub — without you touching the command line.
 
@@ -103,5 +103,5 @@ Code style is enforced by `.editorconfig` + ESLint: UTF-8, LF, 2-space indent. S
 ## Support
 
 - 🐛 [Bug reports](https://github.com/Janus5G/Project-Pusher2/issues/new?template=bug_report.md)
-- 💡 [Feature requests](https://github.com/Janus5G/Project-Pusher/issues/new?template=feature_request.md)
+- 💡 [Feature requests](https://github.com/Janus5G/Project-Pusher2/issues/new?template=feature_request.md)
 - 🔐 Security: security@project-pusher.dev
