@@ -1,18 +1,55 @@
 {
   "name": "project-pusher",
   "version": "1.0.0",
+  "description": "Local-first Electron tool that scans projects, prepares GitHub-ready repository files, and pushes safely.",
   "main": "main/main.js",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.js",
-    "check:js": "node --check main/main.js && node --check main/ipc-handlers.js && node --check main/scanner.js && node --check main/repo-generator.js && node --check main/security-checks.js && node --check main/git-push.js && node --check main/auth.js && node --check main/test-runner.js && node --check preload.js && node --check renderer/renderer.js"
+    "check:js": "node --check main/main.js && node --check main/ipc-handlers.js && node --check main/scanner.js && node --check main/repo-generator.js && node --check main/security-checks.js && node --check main/git-push.js && node --check main/auth.js && node --check main/test-runner.js && node --check preload.js && node --check renderer/renderer.js",
+    "build": "electron-builder --publish never",
+    "build:win": "electron-builder --win nsis --x64 --publish never",
+    "build:linux": "electron-builder --linux AppImage --x64 --publish never",
+    "build:mac": "electron-builder --mac dmg zip --universal --publish never"
   },
   "dependencies": {
-    "electron": "^43.2.0",
     "simple-git": "^3.20.0"
   },
-  "description": "Local-first Electron tool that scans projects, prepares GitHub-ready repository files, and pushes safely.",
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "26.16.1"
+  },
   "engines": {
     "node": ">=22.12.0"
+  },
+  "build": {
+    "appId": "io.github.janus5g.projectpusher",
+    "productName": "Project Pusher2",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "templates/**/*",
+      "preload.js",
+      "package.json"
+    ],
+    "artifactName": "Project-Pusher2-${version}-${arch}.${ext}",
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Development"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
   }
 }
