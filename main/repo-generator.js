@@ -12,6 +12,7 @@ const FILE_OPTION_MAP = {
   codeOfConduct: 'CODE_OF_CONDUCT.md',
   editorconfig: '.editorconfig',
   ci: '.github/workflows/ci.yml',
+  release: '.github/workflows/release.yml',
   repodoc: '.github/workflows/repodoc.yml',
   dependabot: '.github/dependabot.yml',
   bugTemplate: '.github/ISSUE_TEMPLATE/bug_report.md',
@@ -146,6 +147,211 @@ function ciTemplate(scan) {
   return `${header}      - name: Repository check\n        run: echo "No language-specific CI command was detected."\n`;
 }
 
+function releaseWorkflowTemplate(scan) {
+  const release = scan.releaseAutomation;
+  if (!release?.supported || release.profile !== 'electron-builder') {
+    throw new Error(release?.reason || 'Automatic release generation is not supported for this project.');
+  }
+
+  const installCommand = release.installCommand || 'npm ci';
+  const artifactDirectory = release.artifactDirectory || 'dist';
+  const artifactPrefix = artifactDirectory === '.' ? '' : `${artifactDirectory}/`;
+  const windowsCommand = release.buildCommands?.windows;
+  const linuxCommand = release.buildCommands?.linux;
+  const macCommand = release.buildCommands?.macos;
+  if (!windowsCommand || !linuxCommand || !macCommand) {
+    throw new Error('Release build commands are incomplete.');
+  }
+
+  const corepackStep = release.manager === 'npm'
+    ? ''
+    : `      - name: Enable Corepack
+        run: corepack enable
+
+`;
+  const cacheLine = release.manager === 'npm' ? '          cache: npm\n' : '';
+
+  return `name: Build Cross-Platform Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate release source
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+${cacheLine}
+${corepackStep}      - name: Install dependencies
+        run: ${installCommand}
+
+      - name: Run detected tests
+        shell: bash
+        run: |
+${(scan.testCommands?.length ? scan.testCommands : ['echo "No automated test command detected; continuing with packaging validation."']).map((command) => `          ${command}`).join('\n')}
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=$(printf '%s' "$GITHUB_REF_NAME" | sed 's/^v//')
+          echo "package.json version: $PACKAGE_VERSION"
+          echo "Git tag version:       $TAG_VERSION"
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Git tag does not match package.json version."
+            exit 1
+          fi
+
+  build:
+    name: Build \${{ matrix.name }}
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-latest
+            command: ${yamlQuote(windowsCommand)}
+            artifact: project-release-windows
+            files: |
+              ${artifactPrefix}*.exe
+
+          - name: Linux x64
+            os: ubuntu-latest
+            command: ${yamlQuote(linuxCommand)}
+            artifact: project-release-linux
+            files: |
+              ${artifactPrefix}*.AppImage
+
+          - name: macOS Universal
+            os: macos-latest
+            command: ${yamlQuote(macCommand)}
+            artifact: project-release-macos
+            files: |
+              ${artifactPrefix}*.dmg
+              ${artifactPrefix}*.zip
+
+    runs-on: \${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+${cacheLine}
+${corepackStep}      - name: Install dependencies
+        run: ${installCommand}
+
+      - name: Build
+        run: \${{ matrix.command }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: \${{ matrix.artifact }}
+          path: \${{ matrix.files }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository and tags
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify Git repository
+        shell: bash
+        run: |
+          git rev-parse --is-inside-work-tree
+          git tag --list "$GITHUB_REF_NAME"
+
+      - name: Download all platform builds
+        uses: actions/download-artifact@v8
+        with:
+          pattern: project-release-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA-256 checksums
+        shell: python
+        run: |
+          from pathlib import Path
+          import hashlib
+
+          root = Path("release-assets")
+          output = root / "SHA256SUMS.txt"
+
+          files = sorted(
+              p for p in root.iterdir()
+              if p.is_file() and p.name != "SHA256SUMS.txt"
+          )
+
+          if not files:
+              raise SystemExit("No release files found.")
+
+          lines = []
+          for artifact in files:
+              digest = hashlib.sha256()
+              with artifact.open("rb") as handle:
+                  for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                      digest.update(chunk)
+              lines.append(f"{digest.hexdigest()}  {artifact.name}")
+
+          output.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+          print(output.read_text())
+
+      - name: Prepare checksum release notes
+        shell: bash
+        run: |
+          {
+            echo "## SHA-256 checksums"
+            echo
+            echo '~~~text'
+            cat release-assets/SHA256SUMS.txt
+            echo '~~~'
+          } > release-prefix.md
+          sed -i 's/~~~/\`\`\`/g' release-prefix.md
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: \${{ github.token }}
+          GH_REPO: \${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \\
+            release-assets/* \\
+            --verify-tag \\
+            --generate-notes \\
+            --notes "$(cat release-prefix.md)"
+`;
+}
+
 function repodocWorkflowTemplate() {
   return `name: RepoDoc\n\non:\n  workflow_dispatch:\n  push:\n    branches: [main]\n\npermissions:\n  contents: read\n\njobs:\n  scan:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with:\n          python-version: '3.12'\n      - name: Generate repository summary\n        shell: bash\n        run: |\n          if [ -f repodoc.py ]; then\n            python repodoc.py . > repodoc-summary.json\n          else\n            python - <<'PY'\n          import json\n          from pathlib import Path\n          root = Path('.')\n          ignored = {'.git', 'node_modules', '.venv', 'dist', 'build', 'coverage', 'target'}\n          files = sorted(str(p).replace('\\\\', '/') for p in root.rglob('*') if p.is_file() and not any(part in ignored for part in p.parts))\n          print(json.dumps({'projectName': root.resolve().name, 'fileCount': len(files), 'files': files[:250]}, indent=2))\n          PY\n          fi\n      - name: Upload RepoDoc summary\n        uses: actions/upload-artifact@v4\n        with:\n          name: repodoc-summary\n          path: repodoc-summary.json\n`;
 }
@@ -209,6 +415,7 @@ function contentFor(relativePath, scan, options) {
     'CODE_OF_CONDUCT.md': codeOfConductTemplate,
     '.editorconfig': editorconfigTemplate,
     '.github/workflows/ci.yml': () => ciTemplate(scan),
+    '.github/workflows/release.yml': () => releaseWorkflowTemplate(scan),
     '.github/workflows/repodoc.yml': repodocWorkflowTemplate,
     '.github/dependabot.yml': () => dependabotTemplate(scan),
     '.github/ISSUE_TEMPLATE/bug_report.md': bugTemplate,

@@ -91,3 +91,58 @@ test('scanner recognizes Python, Go, Rust, Java, .NET and generic projects', asy
     });
   }
 });
+
+
+test('scanner detects a safe Electron release profile', async (t) => {
+  const root = makeTempProject();
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
+    name: 'release-fixture',
+    version: '1.2.3',
+    scripts: {
+      test: 'node --test',
+      'build:win': 'electron-builder --win nsis --x64 --publish never',
+      'build:linux': 'electron-builder --linux AppImage --x64 --publish never',
+      'build:mac': 'electron-builder --mac dmg zip --universal --publish never'
+    },
+    devDependencies: {
+      electron: '^43.0.0',
+      'electron-builder': '^26.0.0'
+    }
+  }));
+  fs.writeFileSync(path.join(root, 'package-lock.json'), '{}');
+
+  const scan = await scanProject(root);
+
+  assert.equal(scan.releaseAutomation.supported, true);
+  assert.equal(scan.releaseAutomation.profile, 'electron-builder');
+  assert.equal(scan.releaseAutomation.installCommand, 'npm ci');
+  assert.equal(scan.releaseAutomation.version, '1.2.3');
+  assert.equal(scan.releaseAutomation.buildCommands.windows, 'npm run build:win');
+  assert.ok(scan.recommendedFiles.includes('.github/workflows/release.yml'));
+});
+
+
+test('scanner refuses ambiguous Electron release scripts', async (t) => {
+  const root = makeTempProject();
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
+    name: 'ambiguous-release',
+    version: '1.0.0',
+    scripts: {
+      'build:win': 'electron-builder --win portable'
+    },
+    devDependencies: {
+      electron: '^43.0.0',
+      'electron-builder': '^26.0.0'
+    }
+  }));
+
+  const scan = await scanProject(root);
+
+  assert.equal(scan.releaseAutomation.supported, false);
+  assert.match(scan.releaseAutomation.reason, /will not replace or guess/i);
+  assert.ok(!scan.recommendedFiles.includes('.github/workflows/release.yml'));
+});

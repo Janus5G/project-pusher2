@@ -48,6 +48,39 @@ class RepoDocTests(unittest.TestCase):
             payload = json.dumps(repodoc.scan_project(root), sort_keys=True)
             self.assertIn('"projectType": "Go"', payload)
 
+    def test_release_detection_and_generation_for_electron_builder(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "package.json").write_text(json.dumps({
+                "name": "release-fixture",
+                "version": "1.0.0",
+                "scripts": {
+                    "test": "node --test",
+                    "build:win": "electron-builder --win nsis --x64 --publish never",
+                    "build:linux": "electron-builder --linux AppImage --x64 --publish never",
+                    "build:mac": "electron-builder --mac dmg zip --universal --publish never",
+                },
+                "devDependencies": {
+                    "electron": "43",
+                    "electron-builder": "26",
+                },
+            }), encoding="utf-8")
+            (root / "package-lock.json").write_text("{}", encoding="utf-8")
+
+            summary = repodoc.scan_project(root)
+            self.assertTrue(summary["releaseAutomation"]["supported"])
+            self.assertEqual(summary["releaseAutomation"]["artifactDirectory"], "dist")
+            self.assertIn(".github/workflows/release.yml", summary["recommendedFiles"])
+
+            result = repodoc.generate_missing(root, summary)
+            self.assertIn(".github/workflows/release.yml", result["created"])
+            workflow = (root / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+            self.assertIn("name: Windows x64", workflow)
+            self.assertIn("name: Linux x64", workflow)
+            self.assertIn("name: macOS Universal", workflow)
+            self.assertIn("Checkout repository and tags", workflow)
+            self.assertIn("SHA256SUMS.txt", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -28,10 +28,16 @@ function updateGenerationOptions(scan) {
   document.querySelectorAll('input[data-repo-file]').forEach((checkbox) => {
     const repoFile = checkbox.dataset.repoFile;
     const alreadyExists = existing.has(repoFile);
-    checkbox.disabled = alreadyExists;
+    const isRelease = repoFile === '.github/workflows/release.yml';
+    const releaseSupported = Boolean(scan.releaseAutomation?.supported);
+    checkbox.disabled = alreadyExists || (isRelease && !releaseSupported);
     checkbox.checked = !alreadyExists && recommended.has(repoFile);
     const state = checkbox.closest('label')?.querySelector('.file-state');
-    if (state) state.textContent = alreadyExists ? 'exists' : (recommended.has(repoFile) ? 'recommended' : '');
+    if (state) {
+      if (alreadyExists) state.textContent = 'exists';
+      else if (isRelease && !releaseSupported) state.textContent = scan.releaseAutomation?.reason || 'not supported';
+      else state.textContent = recommended.has(repoFile) ? 'recommended' : '';
+    }
   });
 }
 
@@ -43,6 +49,11 @@ function renderScanSummary(scan) {
   setText('scanManagers', (scan.packageManagers || []).join(', ') || 'None detected');
   setText('scanTests', (scan.tests || []).join(', ') || 'No tests detected');
   setText('scanPurpose', scan.description);
+  const release = scan.releaseAutomation || {};
+  const releaseText = release.workflowExists
+    ? 'Existing workflow'
+    : (release.supported ? `Ready · ${release.profile}` : (release.reason || 'Not supported'));
+  setText('scanRelease', releaseText);
   setText('scanStatus', `${scan.projectName} · ${scan.fileCount} scanned file(s) · local scan only`);
 
   const score = byId('scanScore');
@@ -154,6 +165,7 @@ byId('generate').addEventListener('click', async () => {
       codeOfConduct: byId('codeOfConduct').checked,
       editorconfig: byId('editorconfig').checked,
       ci: byId('ci').checked,
+      release: byId('release').checked,
       repodoc: byId('repodoc').checked,
       dependabot: byId('dependabot').checked,
       bugTemplate: byId('bugTemplate').checked,
