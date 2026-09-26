@@ -28,8 +28,8 @@ Download the latest installer from the [Releases](https://github.com/Janus5G/Pro
 ### From source
 
 ```bash
-git clone https://github.com/Janus5G/Project-Pusher.git
-cd Project-Pusher
+git clone https://github.com/Janus5G/Project-Pusher2.git
+cd Project-Pusher2
 npm install
 cp .env.example .env   # then add your GitHub token
 npm start
@@ -53,7 +53,7 @@ Requirements: **Node.js 22**, **npm 10+**, **Git 2.30+**.
 Non-interactive example (CLI bridge):
 
 ```bash
-npx project-pusher push --folder ./my-app --repo Janus5G/my-app --branch main -m "feat: initial push"
+npx project-pusher2 push --folder ./my-app --repo Janus5G/my-app --branch main -m "feat: initial push"
 ```
 
 ## Security
@@ -102,6 +102,6 @@ Code style is enforced by `.editorconfig` + ESLint: UTF-8, LF, 2-space indent. S
 
 ## Support
 
-- 🐛 [Bug reports](https://github.com/Janus5G/Project-Pusher/issues/new?template=bug_report.md)
+- 🐛 [Bug reports](https://github.com/Janus5G/Project-Pusher2/issues/new?template=bug_report.md)
 - 💡 [Feature requests](https://github.com/Janus5G/Project-Pusher/issues/new?template=feature_request.md)
 - 🔐 Security: security@project-pusher.dev
