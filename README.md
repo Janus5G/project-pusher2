@@ -28,8 +28,8 @@ Download the latest installer from the [Releases](https://github.com/Janus5G/Pro
 ### From source
 
 ```bash
-git clone https://github.com/Janus5G/Project-Pusher2.git
-cd Project-Pusher2
+git clone https://github.com/Janus5G/project-pusher2.git
+cd project-pusher2
 npm install
 cp .env.example .env   # then add your GitHub token
 npm start
