@@ -138,4 +138,4 @@ Existing release workflows are never overwritten. If the scanner sees an ambiguo
 
 - 🐛 [Bug reports](https://github.com/Janus5G/project-pusher2/issues/new?template=bug_report.md)
 - 💡 [Feature requests](https://github.com/Janus5G/project-pusher2/issues/new?template=feature_request.md)
-- 🔐 Security: security@project-pusher.dev
+- 🔐 Security: My email
