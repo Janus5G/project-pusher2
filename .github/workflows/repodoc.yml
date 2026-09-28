@@ -39,7 +39,7 @@ jobs:
         run: python repodoc.py . --output repodoc-summary.json
 
       - name: Create Pull Request for Documentation
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "docs: auto-update README"
           title: "docs: auto-update repository summary"
