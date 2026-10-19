@@ -13,14 +13,13 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 concurrency:
   group: repodoc-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  update-readme:
+  update-summary:
     name: Update repository summary
     runs-on: ubuntu-latest
     steps:
@@ -34,16 +33,19 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Generate documentation summary
+      - name: Generate repository summary
         run: python repodoc.py . --output repodoc-summary.json
 
-      - name: Create Pull Request for documentation
-        uses: peter-evans/create-pull-request@v8
-        with:
-          commit-message: "docs: auto-update repository summary"
-          title: "docs: auto-update repository summary"
-          body: "Automated update from RepoDoc pipeline."
-          branch: "docs/auto-update-summary"
-          delete-branch: true
-          add-paths: |
-            repodoc-summary.json
+      - name: Commit summary when changed
+        shell: bash
+        run: |
+          if git diff --quiet -- repodoc-summary.json; then
+            echo "RepoDoc summary is already up to date."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add repodoc-summary.json
+          git commit -m "docs: auto-update repository summary"
+          git push
