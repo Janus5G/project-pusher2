@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: repodoc-${{ github.ref }}
@@ -20,29 +21,29 @@ concurrency:
 
 jobs:
   update-readme:
-    name: Update README
+    name: Update repository summary
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      # Opsætter Python i stedet for Node.js for at køre dit script
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
-      # Kalder dit Python-script og genererer JSON-rapporten direkte i din README-mappe
       - name: Generate documentation summary
         run: python repodoc.py . --output repodoc-summary.json
 
-      - name: Create Pull Request for Documentation
-        uses: peter-evans/create-pull-request@v6
+      - name: Create Pull Request for documentation
+        uses: peter-evans/create-pull-request@v8
         with:
-          commit-message: "docs: auto-update README"
+          commit-message: "docs: auto-update repository summary"
           title: "docs: auto-update repository summary"
           body: "Automated update from RepoDoc pipeline."
           branch: "docs/auto-update-summary"
-
+          delete-branch: true
+          add-paths: |
+            repodoc-summary.json
