@@ -6,6 +6,26 @@
 [![CI](https://github.com/Janus5G/project-pusher2/actions/workflows/ci.yml/badge.svg)](https://github.com/Janus5G/project-pusher2/actions/workflows/ci.yml)
 [![Security Scan](https://github.com/Janus5G/project-pusher2/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Janus5G/project-pusher2/actions/workflows/security-scan.yml)
 
+# ⚠️ PROJECT IS ARCHIVED
+
+[![Archived](https://shields.io)](https://github.com)
+
+**This repository has been archived by the owner and is now read-only. No further updates, bug fixes, or support will be provided, and issues/pull requests are disabled.**
+
+---
+
+### ❓ Why is this project archived?
+This project was initially created to explore features beyond its original scope. However, since excellent, production-ready alternatives like **GitHub Desktop** already exist and cover most graphical Git workflows seamlessly, development on Project Pusher2 has been discontinued.
+
+### 🔄 What should I use instead?
+For a robust GUI experience that lets you stage, commit, and push without the command line, we highly recommend using the official tool:
+* **[GitHub Desktop](https://github.com)**
+
+### 💾 License & Reusing Code
+The project is licensed under the **MIT License**. While this repository remains online strictly as a historical archive, you are welcome to **fork** it and continue development independently if you wish to build upon the codebase.
+
+---
+
 > Desktop app that stages, commits and pushes local project folders to GitHub — without you touching the command line.
 
 <p align="center">
