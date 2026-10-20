@@ -6,7 +6,7 @@
 [![CI](https://github.com/Janus5G/project-pusher2/actions/workflows/ci.yml/badge.svg)](https://github.com/Janus5G/project-pusher2/actions/workflows/ci.yml)
 [![Security Scan](https://github.com/Janus5G/project-pusher2/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Janus5G/project-pusher2/actions/workflows/security-scan.yml)
 
-# ⚠️ PROJECT IS ARCHIVED
+# PROJECT IS ARCHIVED
 
 [![Archived](https://shields.io)](https://github.com)
 
