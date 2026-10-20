@@ -8,8 +8,6 @@
 
 # PROJECT IS ARCHIVED
 
-[![Archived](https://shields.io)](https://github.com)
-
 **This repository has been archived by the owner and is now read-only. No further updates, bug fixes, or support will be provided, and issues/pull requests are disabled.**
 
 ---
